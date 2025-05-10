@@ -6,19 +6,38 @@
   <style>
     body {
       font-family: 'Roboto', sans-serif;
-      background-color: #f8f9fa;
+      background-color: #e5e2dd; /* Exact background color from image */
       padding: 20px;
       color: #333;
     }
-    form {
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      max-width: 1200px;
+      margin: auto;
+    }
+    .form-container {
+      flex: 1 1 400px;
       background: #ffffff;
       padding: 25px;
       border-radius: 10px;
       box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-      max-width: 800px;
-      margin: auto;
     }
-    input[type="text"], select, textarea {
+    .iframe-container {
+      flex: 1 1 600px;
+      min-height: 500px;
+      background: #ffffff;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+    iframe {
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+    input[type="text"] {
       width: 100%;
       padding: 12px;
       margin-top: 8px;
@@ -68,17 +87,81 @@
     style="width: 60%; max-width: 500px; height: auto; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.1);">
 </div>
 
-<!-- Chatbot Form -->
-<form id="assessmentForm">
-  <label>Priority Standard (e.g., 7.E.ST.1):</label>
-  <input type="text" name="learningStandards" required placeholder="Enter standard code">
+<!-- Two-Column Layout: Form + Embedded Site -->
+<div class="container">
 
-  <label>Priority Standard Description:</label>
-  <input type="text" name="learningObjectives" required placeholder="Enter standard description">
+  <!-- Left: Input Form -->
+  <form id="assessmentForm" class="form-container">
+    <label>Priority Standard (e.g., 7.E.ST.1):</label>
+    <input type="text" name="learningStandards" required placeholder="Enter standard code">
 
-  <button type="submit">Identify Priority Skills</button>
-</form>
+    <label>Priority Standard Description:</label>
+    <input type="text" name="learningObjectives" required placeholder="Enter standard description">
+
+    <button type="submit">Identify Priority Skills</button>
+  </form>
+
+  <!-- Right: Embedded Satchel Commons -->
+  <div class="iframe-container">
+    <iframe src="https://ky.satchelcommons.com" title="Satchel Commons"></iframe>
+  </div>
+</div>
 
 <!-- Loading Spinner -->
 <div id="spinner">
-  <img src="https://upload.wikimedia
+  <img src="https://upload.wikimedia.org/wikipedia/commons/b/b1/Loading_icon.gif" alt="Loading..." width="100">
+</div>
+
+<!-- Response Area -->
+<div id="response"></div>
+<button id="downloadPDF" style="display:none;">Save as PDF</button>
+
+<!-- Script -->
+<script>
+const form = document.getElementById('assessmentForm');
+const spinner = document.getElementById('spinner');
+const responseDiv = document.getElementById('response');
+const downloadButton = document.getElementById('downloadPDF');
+
+const webAppUrl = 'https://script.google.com/macros/s/AKfycbz9YgpoolURJdShZ6RgnicsXWM1qhtEVkyqHEmeg7xf3Wc071htECSmeFIYNpaI5E6nTA/exec';
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const formData = new FormData(form);
+  const data = Object.fromEntries(formData);
+
+  spinner.style.display = 'block';
+  responseDiv.style.display = 'none';
+  downloadButton.style.display = 'none';
+
+  try {
+    const response = await fetch(webAppUrl, {
+      method: 'POST',
+      body: JSON.stringify(data),
+      headers: { 'Content-Type': 'application/json' }
+    });
+
+    const result = await response.json();
+    spinner.style.display = 'none';
+    responseDiv.style.display = 'block';
+    responseDiv.innerText = result.reply;
+    downloadButton.style.display = 'block';
+  } catch (error) {
+    spinner.style.display = 'none';
+    alert('An error occurred. Please try again.');
+    console.error(error);
+  }
+});
+
+document.getElementById('downloadPDF').addEventListener('click', () => {
+  const newWindow = window.open('', '', 'width=800,height=600');
+  newWindow.document.write('<html><head><title>Essential Skills</title></head><body>');
+  newWindow.document.write('<pre>' + document.getElementById('response').innerText + '</pre>');
+  newWindow.document.write('</body></html>');
+  newWindow.document.close();
+  newWindow.print();
+});
+</script>
+
+</body>
+</html>
